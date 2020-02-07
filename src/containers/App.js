@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import CardList from '../components/CardList';
 // Hardcoded robots,
 // import { robots } from './robots';
@@ -7,45 +8,70 @@ import Scroll from '../components/Scroll';
 import ErrorBoundry from '../components/ErrorBoundry';
 import './App.css';
 
-class App extends Component {
-    constructor() {
-        super()
-        this.state = {
-            // so we don't need here now robots: robots, but will need it 
-            // when they come from different origin (empty array filled with collected users).
-            robots: [],
-            searchfield: ''
-        }
+import { setSearchField, requestRobots } from '../actions';
+
+
+const mapStateToProps = state => {
+    return {
+        searchField: state.searchRobots.searchField,
+        robots: state.requestRobots.robots,
+        isPending: state.requestRobots.isPending,
+        error: state.requestRobots.error
     }
+}
+
+const mapDispatchToProps = (dispatch) => {
+    return {
+        onSearchChange: (event) => dispatch(setSearchField(event.target.value)),
+        onRequestRobots: () => dispatch(requestRobots())
+    }
+}
+
+class App extends Component {
+    // constructor() {
+    //     super()
+    //     this.state = {
+    //         // so we don't need here now robots: robots, but will need it 
+    //         // when they come from different origin (empty array filled with collected users).
+    //         robots: []
+    //         // searchfield: '' => no longer needed with Redux
+    //     }
+    // }
 
     componentDidMount() {
-        fetch('https://jsonplaceholder.typicode.com/users')
-            .then(response => {
-                return response.json();
-        })
-        .then(users => {
-            this.setState( {robots: users} )
-        })
+        // console.log(this.props.store.getState())
+        // fetch('https://jsonplaceholder.typicode.com/users')
+        //     .then(response => {
+        //         return response.json();
+        // })
+        // .then(users => {
+        //     this.setState( {robots: users} )
+        // })
+        this.props.onRequestRobots()
     }
 
-    onSearchChange = (event) => {
-        this.setState({ searchfield: event.target.value })
+    // => no longer needed with Redux:
+    // onSearchChange = (event) => {
+    //     this.setState({ searchfield: event.target.value })
         
-    }
+    // }
 
     render() {
-        // const { robots, searchfield } = this.state; to remove from all the places where used
-        const filteredRobots = this.state.robots.filter(robot => {
-        return robot.name.toLowerCase().includes(this.state.searchfield.toLowerCase())
+        // const { robots, searchfield, isPending } = this.state; to remove from all the places where used
+        // const { robots } = this.state;
+        const { searchField, onSearchChange, robots, isPending } = this.props;
+        const filteredRobots = robots.filter(robot => {
+        return robot.name.toLowerCase().includes(searchField.toLowerCase())
         });
         // if (!this.state.robots.length)
-        if (this.state.robots.length === 0) {
-            return <h1>Loading...</h1>
-        } else {
-        return (
+        // if (this.state.robots.length === 0) {
+        // } else {
+        return isPending ?
+        <h1>Loading...</h1> :
+        (
             <div className='tc'>
                 <h1 className='f1'>Robofriends</h1>
-                <SearchBox searchChange={this.onSearchChange}/>
+                <SearchBox searchChange={onSearchChange}/>
                 <Scroll>
                     <ErrorBoundry>
                         <CardList robots={filteredRobots}/>
@@ -53,11 +79,11 @@ class App extends Component {
                 </Scroll>
             </div>
         );
-        }
+        }  
     }
-}
 
-export default App;
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
 
 // We have our App component that has 2 states (robots & searchfield).
 // And because App owns the state, any component that has state uses the class syntax,
